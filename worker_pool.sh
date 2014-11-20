@@ -21,10 +21,10 @@
 # . worker_pool.sh
 # export _worker_pool_WORKERS=2
 # for f in $(ls /some/path); do
-#    start_worker_or_wait_for_slot grep PATTERN /some/path/$f > /tmp/${f}.matches
+#    _worker_pool_start_worker_or_wait_for_slot grep PATTERN /some/path/$f > /tmp/${f}.matches
 # done
 
-worker()
+_worker_pool_worker()
 {
     lock=$1
     shift
@@ -33,12 +33,12 @@ worker()
     rm -f $lock
 }
 
-no_of_running_workers()
+_worker_pool_no_of_running_workers()
 {
     ls ${_worker_pool_LOCK_PREFIX}* 2>/dev/null|wc -l
 }
 
-start_worker_or_wait_for_slot()
+_worker_pool_start_worker_or_wait_for_slot()
 {
     echoed=0
     while [ $(no_of_running_workers) -ge $_worker_pool_WORKERS ]; do
@@ -53,3 +53,5 @@ start_worker_or_wait_for_slot()
     [ $_worker_pool_VERBOSE -gt 0 ] && echo "will start worker $lock: $*"
     worker $lock $* &
 }
+
+
