@@ -41,17 +41,24 @@ _worker_pool_no_of_running_workers()
 _worker_pool_start_worker_or_wait_for_slot()
 {
     echoed=0
-    while [ $(no_of_running_workers) -ge $_worker_pool_WORKERS ]; do
+    while [ $(_worker_pool_no_of_running_workers) -ge $_worker_pool_WORKERS ]; do
 	[ $echoed -eq 0 ] && {
 	    [ $_worker_pool_VERBOSE -gt 0 ] && echo "all workers in use, will wait for a slot">&2
 	    echoed=1
 	}
-	sleep 1
+	sleep ${_worker_pool_SLEEP_TIME}
+	for f in ${_worker_pool_LOCK_PREFIX}*; do
+	    [ "$(ps -p $(cat $f) | wc -l)" -gt 1 ] || {
+		[ $_worker_pool_VERBOSE -gt 0 ] && echo "removing orphaned lock $f for worker $(cat $f)"
+		rm -f $f # remove lock file if worker is no longer running
+	    }
+        done
     done
     lock=${_worker_pool_LOCK_PREFIX}.$RANDOM
     touch $lock
     [ $_worker_pool_VERBOSE -gt 0 ] && echo "will start worker $lock: $*"
-    worker $lock $* &
+    _worker_pool_worker $lock $* &
+    echo $! > $lock
 }
 
 
