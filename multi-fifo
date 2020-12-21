@@ -1,0 +1,35 @@
+#!/bin/bash
+
+usage()
+{
+cat <<EOF>&2
+
+usage : multi-fifo target0 [target1 [target2 [...]]]
+
+Where each targetN is a program you want to send the input multi-fifo receives
+
+EOF
+
+}
+
+[ $# -eq 0 ] && usage && exit 1
+
+i=0
+pipeline="tee /dev/null"
+while [ -n "$1" ]; do
+target=$1
+fifo=/tmp/multi-fifo-$$.$i
+mkfifo $fifo
+eval "$target < $fifo" &
+pipeline="$pipeline | tee $fifo"
+i=$((i+1))
+shift
+done
+
+eval "cat | $pipeline"
+
+j=0
+while [ $j -lt $i ]; do
+rm -f /tmp/multi-fifo-$$.$j
+j=$((j+1))
+done
